@@ -1082,7 +1082,7 @@ async function loadAll(){
   if(!S.settings)S.tab='me';
   render();
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
-  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
 })();
 </script>
 </body>
