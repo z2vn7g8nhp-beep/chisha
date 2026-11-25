@@ -169,12 +169,18 @@ textarea.inp{min-height:80px;resize:vertical}
 .ed-ph .p button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px}
 .ed-ph .add{flex:none;width:84px;height:84px;border-radius:14px;border:1.5px dashed #cfc8bb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--sub);background:#fff}
 .ed-ph .add em{font-style:normal;font-size:24px}
-.it{display:flex;align-items:center;gap:8px;background:#fff;border-radius:14px;padding:9px 10px;margin-bottom:6px}
+.it{background:#fff;border-radius:14px;padding:9px 10px;margin-bottom:6px}
+.it-main,.portion-tools{display:flex;align-items:center;gap:8px}
+.portion-tools{flex-wrap:wrap;margin-top:6px}
+.portion-tools button{color:var(--rust);padding:5px 8px;background:var(--rust-s);border-radius:8px;font-size:13px}
+.portion-tools label{font-size:13px;color:var(--sub)}
+.portion-tools input{width:64px;padding:4px;text-align:center}
 .it .in{flex:1;min-width:0}
 .it .in div{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .step{display:flex;align-items:center;gap:2px}
 .step button{width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:17px}
-.step input{width:52px;text-align:center;border:0;background:transparent;font-weight:700;outline:none;padding:0}
+.step input{width:56px;text-align:center;border:1px solid var(--line);border-radius:6px;background:#fff;font-weight:700;padding:3px 0;appearance:textfield}
+.step input::-webkit-inner-spin-button,.step input::-webkit-outer-spin-button{appearance:none}
 .step em{font-style:normal;font-size:12px;color:var(--sub);width:22px}
 .rm{width:26px;height:26px;color:#c0b8aa;font-size:18px}
 .res{display:flex;align-items:center;width:100%;gap:8px;padding:10px 12px;background:#fff;border-radius:12px;margin-bottom:5px;text-align:left}
@@ -560,8 +566,21 @@ const purl={};
 function allFoods(){return FOODS.concat(S.custom)}
 function findFood(n){return S.custom.find(f=>f.n===n)||FOODS.find(f=>f.n===n)}
 function mkItem(n,amt){const f=findFood(n);if(!f)return null;return {n:f.n,u:f.u,per:f.per,k:f.k,p:f.p,c:f.c,f:f.f,amt:amt??f.def}}
-function nut(it){const x=(+it.amt||0)/it.per;return {k:it.k*x,p:it.p*x,c:it.c*x,f:it.f*x}}
-function sumItems(items){return items.reduce((a,it)=>{const n=nut(it);a.k+=n.k;a.p+=n.p;a.c+=n.c;a.f+=n.f;return a},{k:0,p:0,c:0,f:0})}
+// 按份食物保留原单位和营养基准，称重时用实吃克数除以每单位克重。
+function positive(v){return Number.isFinite(+v)&&+v>0}
+function portionAmount(it){
+  if(it.grams==null)return +it.amt||0;
+  return positive(it.grams)&&positive(it.unitGrams)?it.grams/it.unitGrams:0;
+}
+function shownUnit(it){return it.grams==null?it.u:'g'}
+function itemLabel(it){return `${it.n} ${it.grams??it.amt}${shownUnit(it)}`}
+function nut(it){const x=portionAmount(it)/it.per;return {k:it.k*x,p:it.p*x,c:it.c*x,f:it.f*x}}
+function sumItems(items){return items.reduce((a,it)=>{
+  const n=nut(it);a.k+=n.k;a.p+=n.p;a.c+=n.c;a.f+=n.f;
+  const grams=it.grams??(it.u==='g'?it.amt:0);
+  if(positive(grams))a.g+=+grams;
+  return a;
+},{k:0,p:0,c:0,f:0,g:0})}
 function blankDay(){return {meals:[],water:0,weight:null,note:'',moods:[]}}
 function getDay(k){return S.days[k]||blankDay()}
 function ensureDay(k){if(!S.days[k])S.days[k]=blankDay();return S.days[k]}
@@ -635,7 +654,7 @@ function renderToday(){
     h+=`<div class="card"><div class="hero">
       <div class="ringbox"><svg viewBox="0 0 140 140"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6d184"/><stop offset="1" stop-color="#5e9444"/></linearGradient></defs><circle class="trk" cx="70" cy="70" r="${R}"/><circle class="bar ${over?'over':''}" cx="70" cy="70" r="${R}" stroke-dasharray="${LEN}" stroke-dashoffset="${LEN}" data-off="${LEN*(1-pct)}" transform="rotate(-90 70 70)"/></svg>
       <div class="ring-t"><small>${left>=0?'还能吃':'超出'}</small><b>${Math.abs(left)}</b><small>目标 ${T}${eb?`<br>运动 +${eb}`:''}</small></div></div>
-      <div class="macros">${mac('蛋白质',t.p,C.p,'#6fa253')}${mac('碳水',t.c,C.c,'#f2a55a')}${mac('脂肪',t.f,C.f,'#e0533a')}</div></div>`;
+      <div class="macros">${mac('蛋白质',t.p,C.p,'#6fa253')}${mac('碳水',t.c,C.c,'#f2a55a')}${mac('脂肪',t.f,C.f,'#e0533a')}${t.g?`<small>按克记录 ${r1(t.g)} g</small>`:''}</div></div>`;
     const say=pandaSay(k,d,C,T,t);
     h+=`<div class="say">${panda(say[0],52)}<div class="bub">${say[1]}</div></div>`;
     if(k===todayKey()){
@@ -683,7 +702,7 @@ function mealCard(tp,d,C){
   let h=`<div class="card meal" style="--mc:${MT[tp].c}"><div class="mh"><span class="me">${MT[tp].e}</span><b>${MT[tp].n}</b><span class="sub">${S.settings?S.settings.times[tp]:''}</span><span class="grow"></span><span class="mk ${bud&&k>bud*1.15?'warn':''}">${k}<small>${bud?' / '+bud:''} kcal</small></span></div>`;
   if(bud)h+=`<div class="pbar"><i data-w="${Math.min(100,k/bud*100)}"></i></div>`;
   if(meals.length)meals.forEach(m=>{
-    const kk=r0(sumItems(m.items).k);const names=m.items.map(i=>i.n).join('、')||m.note||'只拍了照片';
+    const kk=r0(sumItems(m.items).k);const names=m.items.map(itemLabel).join('、')||m.note||'只拍了照片';
     h+=`<button class="entry" data-a="edit" data-v="${m.id}"><div class="thumbs">${m.photos.length?m.photos.slice(0,3).map(p=>`<img data-pid="${p}" alt="">`).join(''):`<div class="ph0">${m.items.length?emo(findFood(m.items[0].n)||m.items[0]):'🍽️'}</div>`}</div><div class="e-txt"><div>${esc(names)}</div><small>${m.time} · ${m.items.length?kk+' kcal':'未估算热量，点开补充'}</small></div></button>`;
   });
   else h+=`<div class="empty-meal">还没记录${bud?` · 这餐预算 ${bud} kcal，蛋白质 ≈${C.mp[tp]}g`:''}</div>`;
@@ -778,11 +797,11 @@ function weightChart(){
 }
 function openDay(k){
   const d=getDay(k),t=dayTotals(d),C=calc(),L=dateLabel(k);
-  let b=`<div class="row" style="margin-bottom:10px"><span><b style="font-size:22px">${r0(t.k)}</b> <small>${C?'/ '+dayTarget(k,C)+' ':''}kcal · 蛋白 ${r0(t.p)}g</small></span><span class="grow"></span>${d.weight?`<span class="sub">⚖️ ${d.weight} kg</span>`:''}</div>`;
+  let b=`<div class="row" style="margin-bottom:10px"><span><b style="font-size:22px">${r0(t.k)}</b> <small>${C?'/ '+dayTarget(k,C)+' ':''}kcal · 蛋白 ${r0(t.p)}g${t.g?' · 按克记录 '+r1(t.g)+' g':''}</small></span><span class="grow"></span>${d.weight?`<span class="sub">⚖️ ${d.weight} kg</span>`:''}</div>`;
   TYPES.forEach(tp=>d.meals.filter(m=>m.type===tp).forEach(m=>{
     b+=`<div class="dd-meal"><div class="row"><b style="color:${MT[tp].c}">${MT[tp].n}</b><span class="sub">${m.time}</span><span class="grow"></span><span>${r0(sumItems(m.items).k)} kcal</span></div>
     ${m.photos.length?`<div class="dd-ph">${m.photos.map(p=>`<img data-pid="${p}" data-a="viewp" data-v="${p}" alt="">`).join('')}</div>`:''}
-    <div class="sub">${esc(m.items.map(i=>`${i.n} ${i.amt}${i.u}`).join('、'))}</div>${m.note?`<div style="font-size:14px;margin-top:4px">${esc(m.note)}</div>`:''}</div>`;
+    <div class="sub">${esc(m.items.map(itemLabel).join('、'))}</div>${m.note?`<div style="font-size:14px;margin-top:4px">${esc(m.note)}</div>`:''}</div>`;
   }));
   if(!d.meals.length)b+='<p class="sub center">这天没有记录餐食</p>';
   if(d.moods.length||d.note)b+=`<div class="dd-meal"><b>📝 日志</b><div class="chips" style="margin:8px 0">${d.moods.map(m=>`<span class="chip on">${m}</span>`).join('')}</div><div style="white-space:pre-wrap;font-size:14px">${esc(d.note)}</div></div>`;
@@ -883,15 +902,55 @@ function edPhotos(){
   `<button class="add" data-a="pickCam"><em>📷</em>拍照</button><button class="add" data-a="pickAlb"><em>🖼️</em>相册</button>`;
   hydrate($('#edPhotos'));
 }
+function missingWeight(it){
+  if(it.grams!=null&&!positive(it.unitGrams))return 'unit-grams';
+  if(shownUnit(it)==='g'&&!positive(it.grams??it.amt))return 'amt';
+  return '';
+}
+function itemNutrition(it){
+  const missing=missingWeight(it);
+  if(missing==='unit-grams')return `请填写每${it.u}克重`;
+  if(missing)return '请填写实吃克数';
+  const n=nut(it);return `${r0(n.k)} kcal · 蛋白 ${r1(n.p)}g`;
+}
+function previousUnitGrams(it){
+  for(const date of Object.keys(S.days).sort().reverse()){
+    const meals=S.days[date].meals.slice().sort((a,b)=>b.time.localeCompare(a.time));
+    for(const m of meals){
+      const found=m.items.find(x=>x.n===it.n&&x.u===it.u&&positive(x.unitGrams));
+      if(found)return +found.unitGrams;
+    }
+  }
+  return '';
+}
+function toggleWeigh(it){
+  if(it.grams==null){
+    if(!positive(it.unitGrams))it.unitGrams=previousUnitGrams(it);
+    it.grams=positive(it.unitGrams)&&positive(it.amt)?r1(it.amt*it.unitGrams):'';
+  }else{
+    if(!missingWeight(it))it.amt=portionAmount(it);
+    delete it.grams;
+  }
+}
+function editItemRow(it,i){
+  const unit=esc(shownUnit(it)),base=esc(it.u),name=esc(it.n),weighed=it.grams!=null;
+  const amount=weighed?it.grams:it.amt;
+  const tools=SCALABLE.has(it.u)?'':`<div class="portion-tools">
+    <button data-a="weigh" data-i="${i}">${weighed?'按'+base+'记':'按克称重'}</button>
+    ${weighed?`<label>每${base}（约 ${r0(it.k/it.per)} kcal）重 <input class="inp unit-grams" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" value="${esc(it.unitGrams)}"> g</label>`:''}</div>`;
+  return `<div class="it"><div class="it-main"><span class="em" style="width:34px;height:34px;font-size:18px">${emo(findFood(it.n)||it)}</span>
+    <div class="in"><div>${name}</div><small>${esc(itemNutrition(it))}</small></div>
+    <div class="step"><button data-a="dec" data-i="${i}" aria-label="减少${name}的分量">−</button><input class="amt" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" aria-label="${name}实吃分量（${unit}）" placeholder="实吃" value="${esc(amount)}"><em>${unit}</em><button data-a="inc" data-i="${i}" aria-label="增加${name}的分量">＋</button></div>
+    <button class="rm" data-a="rmItem" data-i="${i}" aria-label="移除${name}">×</button></div>${tools}</div>`;
+}
 function edItems(){
-  const E=S.edit;
-  $('#edItems').innerHTML=E.meal.items.length?E.meal.items.map((it,i)=>{const n=nut(it);return `<div class="it"><span class="em" style="width:34px;height:34px;font-size:18px">${emo(findFood(it.n)||it)}</span><div class="in"><div>${esc(it.n)}</div><small>${r0(n.k)} kcal · 蛋白 ${r1(n.p)}g</small></div>
-    <div class="step"><button data-a="dec" data-i="${i}">−</button><input class="amt" data-i="${i}" type="number" inputmode="decimal" value="${it.amt}"><em>${it.u}</em><button data-a="inc" data-i="${i}">＋</button></div><button class="rm" data-a="rmItem" data-i="${i}">×</button></div>`}).join(''):'<p class="sub" style="margin:0 0 6px">还没添加食物，从下面搜索或点选 👇</p>';
+  const items=S.edit.meal.items;
+  $('#edItems').innerHTML=items.length?items.map(editItemRow).join(''):'<p class="sub" style="margin:0 0 6px">还没添加食物，从下面搜索或点选 👇</p>';
   edTotal();
 }
 function edTotal(){
   const E=S.edit;if(!E)return;const t=sumItems(E.meal.items);const C=calc();
-  $('#edTotal').innerHTML=`合计<b>${r0(t.k)} kcal</b>蛋白 ${r0(t.p)}g`;
+  $('#edTotal').innerHTML=E.meal.items.some(missingWeight)?'请补全食物重量':`合计${t.g?' · 按克记录 '+r1(t.g)+' g':''}<b>${r0(t.k)} kcal</b>蛋白 ${r0(t.p)}g`;
   $('#edBud').textContent=C?`${MT[E.meal.type].n}预算 ${C.meals[E.meal.type]} kcal`:'';
 }
 function edCats(){$('#edCats').innerHTML=CATS.map(c=>`<button class="chip ${c===S.edit.cat?'on':''}" data-a="edCat" data-v="${c}">${CAT_E[c]} ${c}</button>`).join('')}
@@ -951,7 +1010,7 @@ async function saveCF(root){
   const old=root.dataset.old;S.custom=S.custom.filter(x=>x.n!==f.n&&x.n!==old).concat(f);await idb.put('kv','custom',S.custom);
   return f;
 }
-function stepOf(it){return it.u==='g'?10:it.u==='ml'?50:0.5}
+function stepOf(it){return shownUnit(it)==='g'?1:it.u==='ml'?50:0.5}
 async function handleFiles(files){
   const E=S.edit;if(!E||!files.length)return;
   for(const f of files){try{const b=await compress(f);const id='p'+uid();await idb.put('photos',id,b);E.meal.photos.push(id);E.newPhotos.push(id)}catch(e){toast(e.message||'照片保存失败')}}
@@ -960,6 +1019,11 @@ async function handleFiles(files){
 async function cancelEdit(){const E=S.edit;if(E)for(const p of E.newPhotos)await delPhoto(p);closeSheet()}
 async function saveMeal(){
   const E=S.edit;const m=E.meal;
+  for(const [i,it] of m.items.entries()){
+    const missing=missingWeight(it);
+    if(missing){toast(itemNutrition(it));$(`#edItems .${missing}[data-i="${i}"]`).focus();return}
+    if(it.grams!=null){it.grams=+it.grams;it.unitGrams=+it.unitGrams;it.amt=portionAmount(it)}
+  }
   m.time=$('#edTime').value||nowHM();m.note=$('#edNote').value.trim();
   m.items.forEach(it=>{it.amt=Math.max(0,+it.amt||0)});m.items=m.items.filter(it=>it.amt>0);
   if(!m.items.length&&!m.photos.length&&!m.note){toast('拍张照或加个食物再保存');return}
@@ -1049,8 +1113,11 @@ document.addEventListener('click',async e=>{
     case 'pickAlb':$('#albIn').click();break;
     case 'rmPhoto':{const i=+el.dataset.i;const id=E.meal.photos[i];E.meal.photos.splice(i,1);if(E.newPhotos.includes(id)){E.newPhotos=E.newPhotos.filter(x=>x!==id);await delPhoto(id)}edPhotos();break}
     case 'edCat':E.cat=v;$('#edQ').value='';edCats();edRes();break;
-    case 'addFood':{const it=mkItem(v);if(it){const ex=E.meal.items.find(x=>x.n===it.n);if(ex)ex.amt=r1(+ex.amt+(SCALABLE.has(ex.u)?it.amt:1));else E.meal.items.push(it);edItems();edRecent();toast(`+ ${it.n}`)}break}
-    case 'inc':case 'dec':{const it=E.meal.items[+el.dataset.i];const s=stepOf(it);it.amt=Math.max(s,r1((+it.amt||0)+(a==='inc'?s:-s)));edItems();break}
+    case 'addFood':{const it=mkItem(v);if(it){const ex=E.meal.items.find(x=>x.n===it.n&&x.u===it.u&&x.grams==null);if(ex)ex.amt=r1(+ex.amt+(SCALABLE.has(ex.u)?it.amt:1));else E.meal.items.push(it);edItems();edRecent();toast(`+ ${it.n}`)}break}
+    case 'weigh':{const i=+el.dataset.i,it=E.meal.items[i];toggleWeigh(it);edItems();
+      const input=$(`#edItems .${missingWeight(it)||'amt'}[data-i="${i}"]`);input.focus();input.select();break}
+    case 'inc':case 'dec':{const it=E.meal.items[+el.dataset.i],field=it.grams==null?'amt':'grams';
+      const s=stepOf(it),value=+it[field]||0;it[field]=a==='inc'?r1(value+s):Math.max(Math.min(value||s,s),r1(value-s));edItems();break}
     case 'rmItem':E.meal.items.splice(+el.dataset.i,1);edItems();edRecent();break;
     case 'saveMeal':saveMeal();break;
     case 'delMeal':delMeal();break;
@@ -1059,10 +1126,13 @@ document.addEventListener('click',async e=>{
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='edQ')edRes();
-  else if(t.classList.contains('amt')&&S.edit){S.edit.meal.items[+t.dataset.i].amt=t.value;edTotal();const n=nut(S.edit.meal.items[+t.dataset.i]);t.closest('.it').querySelector('small').textContent=`${r0(n.k)} kcal · 蛋白 ${r1(n.p)}g`}
+  else if(S.edit&&t.matches('#edItems .amt,#edItems .unit-grams')){
+    const it=S.edit.meal.items[+t.dataset.i];
+    const field=t.classList.contains('unit-grams')?'unitGrams':it.grams==null?'amt':'grams';
+    it[field]=t.value;t.closest('.it').querySelector('small').textContent=itemNutrition(it);edTotal();
+  }
   else if(t.id==='noteIn'){clearTimeout(noteTimer);const k=S.date,val=t.value;noteTimer=setTimeout(()=>{ensureDay(k).note=val;saveDay(k)},500)}
 });
-document.addEventListener('change',e=>{if(e.target.classList.contains('amt')&&S.edit)edItems()});
 $('#camIn').addEventListener('change',e=>{handleFiles([...e.target.files]);e.target.value=''});
 $('#albIn').addEventListener('change',e=>{handleFiles([...e.target.files]);e.target.value=''});
 $('#impIn').addEventListener('change',e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value=''});
