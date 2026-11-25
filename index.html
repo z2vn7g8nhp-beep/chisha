@@ -60,21 +60,25 @@ small{font-size:12px;color:var(--sub)}
 .dnav .dt{min-width:150px;text-align:center;font-weight:700}
 .dnav .dt small{display:block;font-weight:400}
 /* ring */
-.hero{display:flex;align-items:center;gap:16px}
-.ringbox{position:relative;width:136px;height:136px;flex:none}
-.ringbox svg{width:136px;height:136px}
-.ringbox .trk{fill:none;stroke:#f5eadf;stroke-width:12}
-.ringbox .bar{fill:none;stroke:var(--green);stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .3s}
+.day-summary{background:linear-gradient(115deg,#fffaf3,#fff 75%);border:1px solid #eee0d1}
+.hero{display:flex;align-items:center;justify-content:space-between;gap:clamp(10px,4vw,28px)}
+.ringbox{position:relative;width:clamp(124px,39vw,168px);aspect-ratio:1;flex:none}
+.ringbox svg{display:block;width:100%;height:100%}
+.ringbox .trk{fill:none;stroke:#eee5d8;stroke-width:5}
+.ringbox .bar{fill:none;stroke:var(--green);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .3s}
 .ringbox .bar.over{stroke:var(--coral)}
 .ring-t{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .ring-t small{text-align:center;line-height:1.35}
-.ring-t b{font-size:30px;line-height:1.1;font-weight:800;letter-spacing:-.5px}
+.ring-t b{font-size:clamp(31px,9vw,42px);line-height:1.16;font-weight:750;letter-spacing:-1.5px}
+.ring-t small,.day-summary .macros small{color:#756355}
+.mac .pbar{height:4px;background:#f0eae1}
 .macros{flex:1;display:flex;flex-direction:column;gap:10px}
 .mac .mt{display:flex;justify-content:space-between;font-size:13px}
 .mac .mt b{font-weight:600}
 .pbar{height:7px;border-radius:9px;background:#f5eadf;overflow:hidden;margin-top:4px}
 .pbar i{display:block;height:100%;border-radius:9px;background:var(--c,var(--green));width:0;transition:width .9s cubic-bezier(.2,.8,.2,1)}
-.next{display:flex;align-items:center;gap:8px;background:var(--green-s);color:#4d7a37;border-radius:14px;padding:10px 14px;font-size:14px;margin-top:14px}
+.next{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 8px;color:#67574b;border-top:1px solid var(--line);padding:12px 1px 0;font-size:13px;margin-top:10px}
+.next small{margin-left:auto;color:#746458}
 .warn-note{background:var(--coral-s);color:#b8492c;border-radius:14px;padding:10px 14px;font-size:13px;margin-top:10px}
 /* meal card */
 .meal .mh{display:flex;align-items:center;gap:8px}
@@ -169,19 +173,24 @@ textarea.inp{min-height:80px;resize:vertical}
 .ed-ph .p button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:14px;line-height:22px}
 .ed-ph .add{flex:none;width:84px;height:84px;border-radius:14px;border:1.5px dashed #cfc8bb;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--sub);background:#fff}
 .ed-ph .add em{font-style:normal;font-size:24px}
-.it{background:#fff;border-radius:14px;padding:9px 10px;margin-bottom:6px}
-.it-main,.portion-tools{display:flex;align-items:center;gap:8px}
-.portion-tools{flex-wrap:wrap;margin-top:6px}
+.it{background:#fffdf9;border:1px solid #e5d7c8;border-radius:14px;padding:11px 12px;margin-bottom:8px}
+.it-main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px 7px}
+.food-name{font-size:16px;overflow-wrap:anywhere}
+.food-meta{display:flex;align-items:center;flex-wrap:wrap;column-gap:7px}
+.food-meta small{color:#76675b}
+.food-meta button{font-size:12px;color:#76675b;text-decoration:underline;text-underline-offset:3px;min-height:26px}
+.it-main [data-a=lastGrams]{justify-self:end;font-size:12px;color:#85502e;border-radius:20px;background:#f6e9d9;padding:4px 10px}
+.portion-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
 .portion-tools button{color:var(--rust);padding:5px 8px;background:var(--rust-s);border-radius:8px;font-size:13px}
 .portion-tools label{font-size:13px;color:var(--sub)}
 .portion-tools input{width:64px;padding:4px;text-align:center}
-.it .in{flex:1;min-width:0}
-.it .in div{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.step{display:flex;align-items:center;gap:2px}
-.step button{width:30px;height:30px;border-radius:50%;background:var(--soft);font-size:17px}
-.step input{width:56px;text-align:center;border:1px solid var(--line);border-radius:6px;background:#fff;font-weight:700;padding:3px 0;appearance:textfield}
+.step{display:flex;align-items:center;justify-self:end;padding:2px;border:1px solid #deceba;background:#fffaf3;border-radius:10px}
+.step:focus-within,.yield-input:focus-within{outline:2px solid #b76c3a;outline-offset:1px}
+.step button{width:28px;min-height:36px;border-radius:8px;color:#785c45;font-size:18px}
+.step input{width:clamp(48px,14vw,66px);text-align:right;border:0;background:transparent;font-size:22px;line-height:1.2;font-weight:700;padding:0;appearance:textfield}
+.step input::placeholder{font-size:16px}
 .step input::-webkit-inner-spin-button,.step input::-webkit-outer-spin-button{appearance:none}
-.step em{font-style:normal;font-size:12px;color:var(--sub);width:22px}
+.step em{font-style:normal;font-size:12px;color:#786554;padding:0 4px;max-width:4em;overflow-wrap:anywhere}
 .rm{width:26px;height:26px;color:#c0b8aa;font-size:18px}
 .res{display:flex;align-items:center;width:100%;gap:8px;padding:10px 12px;background:#fff;border-radius:12px;margin-bottom:5px;text-align:left}
 .res>i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--rust-s);color:var(--rust);display:flex;align-items:center;justify-content:center;font-weight:700}
@@ -210,9 +219,8 @@ details.custom summary::-webkit-details-marker{display:none}
 .top .hp{position:absolute;right:16px;bottom:2px;transition:transform .3s}
 .top .hp:active{transform:rotate(-8deg) scale(1.08)}
 .panda{display:block;flex:none}
-.say{display:flex;align-items:center;gap:10px;margin-top:14px}
-.say .bub{position:relative;flex:1;background:var(--rust-s);color:#7a3d1f;border-radius:14px;padding:9px 12px;font-size:13.5px;line-height:1.5}
-.say .bub::before{content:"";position:absolute;left:-6px;top:50%;margin-top:-6px;border:6px solid transparent;border-right-color:var(--rust-s);border-left:0}
+.pending-meal{display:flex;width:100%;align-items:center;gap:8px;margin-top:10px;padding:3px 12px 3px 6px;border-radius:12px;background:#fbefdf;color:#78492c;text-align:left;font-size:14px}
+.pending-meal b{margin-left:auto;font-size:12px}
 .tail{height:6px;border-radius:6px;background:repeating-linear-gradient(90deg,#d9652f 0 18px,#fff2e4 18px 26px);opacity:.75;margin:10px auto 0;width:120px}
 .cta .panda{margin:0 auto}
 /* v2 */
@@ -228,7 +236,10 @@ body{font-variant-numeric:tabular-nums}
 .scroll-x::-webkit-scrollbar{display:none}
 .scroll-x .chip{flex:none;white-space:nowrap}
 .em{flex:none;width:40px;height:40px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:21px}
-.res{gap:10px;padding:9px 10px}
+#edRes{background:#fff;border-radius:14px;overflow:hidden}
+.res{gap:10px;padding:10px 12px;margin:0;border-radius:0}
+.res+.res{border-top:1px solid #f1e9df}
+.res:focus-visible{outline:2px solid var(--rust-d);outline-offset:-3px}
 .res .rt{flex:1;min-width:0;font-size:14px}
 .res .rt div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tag{display:inline-block;font-size:10.5px;font-style:normal;padding:1px 6px;border-radius:6px;background:var(--green-s);color:#4d7a37;margin-left:4px;vertical-align:1px;font-weight:600}
@@ -256,6 +267,29 @@ body{font-variant-numeric:tabular-nums}
 .body2 .u .inp{text-align:center;font-size:20px;font-weight:700;padding-right:34px}
 .body2 .u em{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-style:normal;font-size:13px;color:var(--sub)}
 .exnote{font-size:12px;color:var(--sub);margin:8px 0 0}
+.recipe-card{border:1px solid #e1d3c1;border-top:4px solid #84926b;border-radius:7px 7px 16px 16px;background:#fffcf6;padding:16px;margin:8px 0 15px}
+.recipe-title{display:block}
+.recipe-title span,.ingredient-head,.recipe-yield{font-size:13px;color:#706252}
+.recipe-title input{display:block;width:100%;border:0;border-bottom:1px solid #d9cbb9;background:transparent;padding:3px 0 9px;font-family:"Songti SC","Noto Serif CJK SC",SimSun,serif;font-size:clamp(23px,6vw,30px);font-weight:700;color:#463829}
+.recipe-title input::placeholder{color:#887967}
+.recipe-title input:focus-visible{outline:2px solid #b76c3a;outline-offset:2px}
+.ingredient-head,.recipe-yield{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.ingredient-head{margin:16px 0 2px;font-weight:600}
+.recipe-card .it{background:transparent;border:0;border-bottom:1px dashed #d8cbbc;border-radius:0;padding:8px 0;margin:0}
+.recipe-card .food-name{font-size:15px}
+.recipe-card .step{background:#fffdf9}
+.recipe-card .it-main{row-gap:0}
+.recipe-card .it-main [data-a=weigh]{justify-self:end;color:#795d43;text-decoration:underline;text-underline-offset:3px;min-height:26px;padding:0 3px;font-size:12px}
+.yield-input input{appearance:textfield}
+.yield-input input::-webkit-inner-spin-button{appearance:none}
+.empty-items{font-size:13px;color:#76675b;margin:8px 0}
+.recipe-yield{margin-top:11px;font-weight:600}
+.yield-input{display:inline-flex;align-items:baseline;gap:5px;background:#fff;border:1px solid #deceba;padding:4px 9px;border-radius:8px}
+.yield-input input{background:transparent;border:0;outline:0;text-align:right;width:72px;min-width:0;font-weight:700}
+#recipeEstimate:not(:empty){background:#edf1e4;border-radius:9px;margin-top:12px;padding:10px 12px;color:#42533c}
+#recipeEstimate strong,#recipeEstimate small{display:block}
+#recipeEstimate small{margin-top:3px;color:#58674f}
+@media(max-width:360px){.recipe-card{padding:12px}.step button{width:24px}.it{padding:9px}.mac .mt{font-size:12px}.hero{gap:8px}}
 </style>
 </head>
 <body>
@@ -652,15 +686,15 @@ function renderToday(){
     const T=dayTarget(k,C),eb=exBonus(d),eaten=r0(t.k),left=T-eaten,pct=Math.min(1,eaten/T);
     const R=56,LEN=2*Math.PI*R,over=eaten>T*1.05;
     const mac=(n,v,tg,c)=>`<div class="mac"><div class="mt"><span>${n}</span><span><b>${r0(v)}</b> / ${tg} g</span></div><div class="pbar" style="--c:${c}"><i data-w="${Math.min(100,v/tg*100)}"></i></div></div>`;
-    h+=`<div class="card"><div class="hero">
+    h+=`<div class="card day-summary"><div class="hero">
       <div class="ringbox"><svg viewBox="0 0 140 140"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6d184"/><stop offset="1" stop-color="#5e9444"/></linearGradient></defs><circle class="trk" cx="70" cy="70" r="${R}"/><circle class="bar ${over?'over':''}" cx="70" cy="70" r="${R}" stroke-dasharray="${LEN}" stroke-dashoffset="${LEN}" data-off="${LEN*(1-pct)}" transform="rotate(-90 70 70)"/></svg>
-      <div class="ring-t"><small>${left>=0?'还能吃':'超出'}</small><b>${Math.abs(left)}</b><small>目标 ${T}${eb?`<br>运动 +${eb}`:''}</small></div></div>
-      <div class="macros">${mac('蛋白质',t.p,C.p,'#6fa253')}${mac('碳水',t.c,C.c,'#f2a55a')}${mac('脂肪',t.f,C.f,'#e0533a')}${t.g?`<small>按克记录 ${r1(t.g)} g</small>`:''}</div></div>`;
-    const say=pandaSay(k,d,C,T,t);
-    h+=`<div class="say">${panda(say[0],52)}<div class="bub">${say[1]}</div></div>`;
+      <div class="ring-t"><small>${left>=0?'还能吃':'已超出'} · kcal</small><b>${Math.abs(left)}</b><small>目标 ${T}${eb?`<br>运动 +${eb}`:''}</small></div></div>
+      <div class="macros">${mac('蛋白质',t.p,C.p,'#829676')}${mac('碳水',t.c,C.c,'#c1a07b')}${mac('脂肪',t.f,C.f,'#b38c7e')}${t.g?`<small>按克记录 ${r1(t.g)} g</small>`:''}</div></div>`;
+    const pending=d.meals.find(m=>!m.items.length);
+    if(pending)h+=`<button class="say pending-meal" data-a="edit" data-v="${esc(pending.id)}">${panda('normal',38)}<span>${MT[pending.type].n}${pending.photos.length?'照片':''}待补录</span><b>补食物 ›</b></button>`;
     if(k===todayKey()){
       const now=hm2m(nowHM());const nx=activeTypes().filter(x=>!d.meals.some(m=>m.type===x)&&hm2m(S.settings.times[x])>=now-60).sort((a,b)=>hm2m(S.settings.times[a])-hm2m(S.settings.times[b]))[0];
-      if(nx)h+=`<div class="next">⏰ 下一餐：<b>${MT[nx].n} ${S.settings.times[nx]}</b><span class="grow"></span>${C.meals[nx]} kcal · 蛋白 ${C.mp[nx]}g</div>`;
+      if(nx)h+=`<div class="next"><span>下一餐</span><b>${MT[nx].n} ${S.settings.times[nx]}</b><small>${C.meals[nx]} kcal · 蛋白 ${C.mp[nx]}g</small></div>`;
     }
     const logged=!hasPendingMeal(d)&&['b','l','d'].every(x=>d.meals.some(m=>m.type===x));
     if(logged&&eaten<C.floor*0.8)h+=`<div class="warn-note">今天吃得比较少。长期吃太少容易掉肌肉、更容易反弹，明天按目标吃够就好。</div>`;
@@ -681,22 +715,6 @@ function renderToday(){
   h+=`<div class="card"><div class="h2">📝 今日日志</div><div class="chips">${MOODS.map(m=>`<button class="chip ${d.moods.includes(m)?'on':''}" data-a="mood" data-v="${m}">${m}</button>`).join('')}</div>
     <textarea class="inp" id="noteIn" style="margin-top:10px" placeholder="今天感觉怎么样？饿不饿、运动、睡眠、想吃但忍住的…">${esc(d.note)}</textarea></div>`;
   view.innerHTML=h;
-}
-// 小熊猫看今天吃得怎么样，说一句
-function pandaSay(k,d,C,T,t){
-  const eaten=r0(t.k),left=T-eaten,isToday=k===todayKey(),hr=new Date().getHours();
-  const has=x=>d.meals.some(m=>m.type===x),main3=['b','l','d'].every(has);
-  if(!d.meals.length){
-    if(!isToday)return ['normal','这天没有记录，想补的话点下面的「选食物」～'];
-    return ['normal',hr<10?`早上好！今天能吃 ${T} kcal，先从早餐开始吧`:hr<14?`今天还没记呢～能吃 ${T} kcal，午饭拍一张？`:`今天还一餐都没记哦，吃了什么补上就好`];
-  }
-  if(hasPendingMeal(d))return ['normal','有餐食待补录，点开那一餐就能补上食物和分量。'];
-  if(eaten>T*1.05)return ['sweat',`${isToday?'今天':'这天'}超了 ${eaten-T} kcal。没关系，明天正常吃就好，千万别饿回来`];
-  if(main3&&eaten>=T*0.85)return ['happy',`${isToday?'今天':'这天'}吃得刚刚好！蛋白质 ${r0(t.p)}/${C.p}g，${t.p>=C.p*0.85?'也够了，棒棒':'下次再多一点蛋白'}`];
-  if(main3&&eaten<C.floor*0.8)return ['sweat','吃得有点少啦，长期这样容易掉肌肉、反弹。睡前饿可以喝杯牛奶'];
-  if(isToday&&eaten>T*0.5&&t.p<C.p*0.5)return ['eat',`还能吃 ${left} kcal。蛋白质才 ${r0(t.p)}g，下一餐加个鸡蛋、一盒牛奶或一块鸡胸～`];
-  if(isToday&&d.water<3&&hr>=14)return ['normal',`还能吃 ${left} kcal。今天水喝得少，先去喝一杯吧 💧`];
-  return ['eat',isToday?`还能吃 ${left} kcal，下一餐慢慢吃～`:`这天吃了 ${eaten} kcal`];
 }
 function mealCard(tp,d,C){
   const meals=d.meals.filter(m=>m.type===tp).sort((a,b)=>a.time.localeCompare(b.time));
@@ -902,20 +920,23 @@ function openEditor({type,meal,items}={}){
   edPhotos();edItems();edCats();edRes();edRecent();
 }
 function foodPicker(afterItems=''){
-  return `<div id="edItems"></div>${afterItems}<div class="recent" id="edRecent"></div>
-    <div class="search"><input class="inp" id="edQ" type="search" placeholder="🔍 搜食物或菜谱" aria-label="搜索食物或菜谱" autocomplete="off"></div>
+  return `<div id="edItems"></div>${afterItems}<div class="recent" id="edRecent"></div>${foodSearch()}`;
+}
+function foodSearch(){
+  return `<div class="search"><input class="inp" id="edQ" type="search" placeholder="搜索食物或菜谱" aria-label="搜索食物或菜谱" autocomplete="off"></div>
     <div class="chips scroll-x" id="edCats"></div><div id="edRes" style="margin-top:8px"></div>
     <details class="custom" id="edCFd"><summary>＋ 找不到？照包装上的营养成分表加一个</summary><div id="edCF">${cfHTML()}</div></details>`;
 }
-function recipeFields(food){
-  return `<label class="field"><span>菜谱名</span><input class="inp" id="recipeName" placeholder="如：我家的番茄炒蛋" value="${esc(food?.n||'')}"></label>
-    <label class="field"><span>整道菜出锅后的净重（克）</span><input class="inp" id="recipeYield" type="number" inputmode="decimal" min="0" step="any" placeholder="不含锅或盘子的重量" value="${esc(food?.recipe.yieldGrams??'')}"></label>
-    <p class="sub" id="recipeEstimate" aria-live="polite"></p>`;
+function recipeFields(food,withIngredients=false){
+  return `<section class="recipe-card"><label class="recipe-title"><span>菜谱名</span><input id="recipeName" placeholder="我家的拿手菜" value="${esc(food?.n||'')}"></label>
+    ${withIngredients?'<div class="ingredient-head"><span>食材</span><span>用量</span></div><div id="edItems"></div>':''}
+    <label class="recipe-yield"><span>出锅净重</span><span class="yield-input"><input id="recipeYield" type="number" inputmode="decimal" min="0" step="any" placeholder="填克数" value="${esc(food?.recipe.yieldGrams??'')}"> g</span></label>
+    <div id="recipeEstimate" aria-live="polite"></div></section>`;
 }
 function openRecipe(food){
   S.edit={recipeEditor:true,original:food,cat:'常用',history:portionHistory(),
     meal:{items:food?food.recipe.ingredients.map(it=>({...it})):[]}};
-  openSheet(food?'编辑菜谱':'新建菜谱',`${recipeFields(food)}<div class="sec-t">整道菜的食材和用量</div>${foodPicker()}`,
+  openSheet(food?'编辑菜谱':'新建菜谱',`${recipeFields(food,true)}${foodSearch()}`,
     '<button class="btn green block" data-a="saveRecipe">保存菜谱</button>');
   edItems();edCats();edRes();
 }
@@ -924,7 +945,7 @@ function showRecipeEstimate(items,total){
   if(!out)return;
   const weight=+$('#recipeYield').value;
   const complete=items.length&&positive(weight)&&items.every(it=>!missingWeight(it)&&positive(portionAmount(it)));
-  out.textContent=complete?`每 100 g 约 ${r0(total.k*100/weight)} kcal · 蛋白 ${r1(total.p*100/weight)} g · 碳水 ${r1(total.c*100/weight)} g · 脂肪 ${r1(total.f*100/weight)} g`:'';
+  out.innerHTML=complete?`<strong>出锅 ${weight} g · 每 100 g 约 ${r0(total.k*100/weight)} kcal</strong><small>蛋白 ${r1(total.p*100/weight)} g · 碳水 ${r1(total.c*100/weight)} g · 脂肪 ${r1(total.f*100/weight)} g</small>`:'';
 }
 async function saveRecipe(button){
   const E=S.edit,items=E.meal.items,name=$('#recipeName').value.trim(),yieldGrams=+$('#recipeYield').value;
@@ -1002,15 +1023,15 @@ function editItemRow(it,i){
   const toggle=SCALABLE.has(it.u)?'':`<button data-a="weigh" data-i="${i}">${weighed?'按'+base+'记':'按克称重'}</button>`;
   const basis=weighed?`<label>每${base}（约 ${r0(it.k/it.per)} kcal）重 <input class="inp unit-grams" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" value="${esc(it.unitGrams)}"> g</label>`:'';
   const shortcut=positive(last)?`<button data-a="lastGrams" data-i="${i}">上次 ${last} 克</button>`:'';
-  const tools=toggle||shortcut?`<div class="portion-tools">${shortcut}${toggle}${basis}</div>`:'';
-  return `<div class="it"><div class="it-main"><span class="em" style="width:34px;height:34px;font-size:18px">${emo(findFood(it.n)||it)}</span>
-    <div class="in"><div>${name}</div><small>${esc(itemNutrition(it))}</small></div>
+  const extra=(S.edit.recipeEditor?'':toggle)+basis;
+  const tools=extra?`<div class="portion-tools">${extra}</div>`:'';
+  return `<div class="it"><div class="it-main"><strong class="food-name">${name}</strong>
     <div class="step"><button data-a="dec" data-i="${i}" aria-label="减少${name}的分量">−</button><input class="amt" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" aria-label="${name}${S.edit.recipeEditor?'食材用量':'实吃分量'}（${unit}）" placeholder="${S.edit.recipeEditor?'用量':'实吃'}" value="${esc(amount)}"><em>${unit}</em><button data-a="inc" data-i="${i}" aria-label="增加${name}的分量">＋</button></div>
-    <button class="rm" data-a="rmItem" data-i="${i}" aria-label="移除${name}">×</button></div>${tools}</div>`;
+    <div class="food-meta"><small>${esc(itemNutrition(it))}</small><button data-a="rmItem" data-i="${i}" aria-label="移除${name}">移除</button></div>${S.edit.recipeEditor?toggle:shortcut}</div>${tools}</div>`;
 }
 function edItems(){
   const items=S.edit.meal.items;
-  $('#edItems').innerHTML=items.length?items.map(editItemRow).join(''):'<p class="sub" style="margin:0 0 6px">还没添加食物，从下面搜索或点选 👇</p>';
+  $('#edItems').innerHTML=items.length?items.map(editItemRow).join(''):`<p class="empty-items">${S.edit.recipeEditor?'从下方选择这道菜的食材':'从下方添加这餐吃的食物'}</p>`;
   const form=$('#mealRecipe');
   if(form){form.hidden=!items.length;if(form.hidden)form.open=false}
   edTotal();
