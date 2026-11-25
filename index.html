@@ -586,6 +586,7 @@ function getDay(k){return S.days[k]||blankDay()}
 function ensureDay(k){if(!S.days[k])S.days[k]=blankDay();return S.days[k]}
 async function saveDay(k){await idb.put('days',k,S.days[k])}
 function dayTotals(d){return sumItems(d.meals.flatMap(m=>m.items))}
+function hasPendingMeal(d){return d.meals.some(m=>!m.items.length)}
 function latestWeight(beforeKey){const ks=Object.keys(S.days).filter(k=>S.days[k].weight&&(!beforeKey||k<=beforeKey)).sort();return ks.length?S.days[ks[ks.length-1]].weight:null}
 
 function calc(){
@@ -609,7 +610,7 @@ function calc(){
 // 运动消耗按一半加回当天额度（手表/Keep 的消耗普遍偏高）
 function exBonus(d){return Math.round((+(d&&d.ex)||0)*0.5/10)*10}
 function dayTarget(k,C){C=C||calc();return C?C.target+exBonus(S.days[k]):0}
-function dayStatus(k){const d=S.days[k];if(!d||!d.meals.length)return '';const C=calc();if(!C)return '';const T=dayTarget(k,C),t=dayTotals(d).k;if(t>T*1.05)return 'over';if(t>=T*0.85)return 'ok';return k===todayKey()?'':'low'}
+function dayStatus(k){const d=S.days[k];if(!d||!d.meals.length||hasPendingMeal(d))return '';const C=calc();if(!C)return '';const T=dayTarget(k,C),t=dayTotals(d).k;if(t>T*1.05)return 'over';if(t>=T*0.85)return 'ok';return k===todayKey()?'':'low'}
 function streakDays(){const t=todayKey();let n=0,k=getDay(t).meals.length?t:addDays(t,-1);while(S.days[k]&&S.days[k].meals.length){n++;k=addDays(k,-1)}return n}
 function region(){return S.settings?.region||''}
 function regFirst(list){const r=region();return r&&r!=='no'?list.filter(f=>f.r===r).concat(list.filter(f=>f.r!==r)):list}
@@ -661,7 +662,7 @@ function renderToday(){
       const now=hm2m(nowHM());const nx=activeTypes().filter(x=>!d.meals.some(m=>m.type===x)&&hm2m(S.settings.times[x])>=now-60).sort((a,b)=>hm2m(S.settings.times[a])-hm2m(S.settings.times[b]))[0];
       if(nx)h+=`<div class="next">⏰ 下一餐：<b>${MT[nx].n} ${S.settings.times[nx]}</b><span class="grow"></span>${C.meals[nx]} kcal · 蛋白 ${C.mp[nx]}g</div>`;
     }
-    const logged=['b','l','d'].every(x=>d.meals.some(m=>m.type===x));
+    const logged=!hasPendingMeal(d)&&['b','l','d'].every(x=>d.meals.some(m=>m.type===x));
     if(logged&&eaten<C.floor*0.8)h+=`<div class="warn-note">今天吃得比较少。长期吃太少容易掉肌肉、更容易反弹，明天按目标吃够就好。</div>`;
     h+='</div>';
   }
@@ -689,6 +690,7 @@ function pandaSay(k,d,C,T,t){
     if(!isToday)return ['normal','这天没有记录，想补的话点下面的「选食物」～'];
     return ['normal',hr<10?`早上好！今天能吃 ${T} kcal，先从早餐开始吧`:hr<14?`今天还没记呢～能吃 ${T} kcal，午饭拍一张？`:`今天还一餐都没记哦，吃了什么补上就好`];
   }
+  if(hasPendingMeal(d))return ['normal','有餐食待补录，点开那一餐就能补上食物和分量。'];
   if(eaten>T*1.05)return ['sweat',`${isToday?'今天':'这天'}超了 ${eaten-T} kcal。没关系，明天正常吃就好，千万别饿回来`];
   if(main3&&eaten>=T*0.85)return ['happy',`${isToday?'今天':'这天'}吃得刚刚好！蛋白质 ${r0(t.p)}/${C.p}g，${t.p>=C.p*0.85?'也够了，棒棒':'下次再多一点蛋白'}`];
   if(main3&&eaten<C.floor*0.8)return ['sweat','吃得有点少啦，长期这样容易掉肌肉、反弹。睡前饿可以喝杯牛奶'];
@@ -698,12 +700,13 @@ function pandaSay(k,d,C,T,t){
 }
 function mealCard(tp,d,C){
   const meals=d.meals.filter(m=>m.type===tp).sort((a,b)=>a.time.localeCompare(b.time));
+  const pending=meals.length>0&&meals.every(m=>!m.items.length);
   const k=r0(sumItems(meals.flatMap(m=>m.items)).k);const bud=C?C.meals[tp]:0;
-  let h=`<div class="card meal" style="--mc:${MT[tp].c}"><div class="mh"><span class="me">${MT[tp].e}</span><b>${MT[tp].n}</b><span class="sub">${S.settings?S.settings.times[tp]:''}</span><span class="grow"></span><span class="mk ${bud&&k>bud*1.15?'warn':''}">${k}<small>${bud?' / '+bud:''} kcal</small></span></div>`;
+  let h=`<div class="card meal" style="--mc:${MT[tp].c}"><div class="mh"><span class="me">${MT[tp].e}</span><b>${MT[tp].n}</b><span class="sub">${S.settings?S.settings.times[tp]:''}</span><span class="grow"></span><span class="mk ${bud&&k>bud*1.15?'warn':''}">${pending?'待补录':`${k}<small>${bud?' / '+bud:''} kcal</small>`}</span></div>`;
   if(bud)h+=`<div class="pbar"><i data-w="${Math.min(100,k/bud*100)}"></i></div>`;
   if(meals.length)meals.forEach(m=>{
     const kk=r0(sumItems(m.items).k);const names=m.items.map(itemLabel).join('、')||m.note||'只拍了照片';
-    h+=`<button class="entry" data-a="edit" data-v="${m.id}"><div class="thumbs">${m.photos.length?m.photos.slice(0,3).map(p=>`<img data-pid="${p}" alt="">`).join(''):`<div class="ph0">${m.items.length?emo(findFood(m.items[0].n)||m.items[0]):'🍽️'}</div>`}</div><div class="e-txt"><div>${esc(names)}</div><small>${m.time} · ${m.items.length?kk+' kcal':'未估算热量，点开补充'}</small></div></button>`;
+    h+=`<button class="entry" data-a="edit" data-v="${m.id}"><div class="thumbs">${m.photos.length?m.photos.slice(0,3).map(p=>`<img data-pid="${p}" alt="">`).join(''):`<div class="ph0">${m.items.length?emo(findFood(m.items[0].n)||m.items[0]):'🍽️'}</div>`}</div><div class="e-txt"><div>${esc(names)}</div><small>${m.time} · ${m.items.length?kk+' kcal':'待补录 · 点开填食物'}</small></div></button>`;
   });
   else h+=`<div class="empty-meal">还没记录${bud?` · 这餐预算 ${bud} kcal，蛋白质 ≈${C.mp[tp]}g`:''}</div>`;
   h+=`<div class="meal-act"><button class="btn ghost sm" data-a="cam" data-t="${tp}">📷 拍照记</button><button class="btn ghost sm" data-a="add" data-t="${tp}">＋ 选食物</button></div></div>`;
@@ -757,9 +760,10 @@ function renderLog(){
   const streak=streakDays();
   const mk=Object.keys(S.days).filter(x=>x.startsWith(S.month));
   const okN=mk.filter(x=>dayStatus(x)==='ok').length;
-  const last7=Array.from({length:7},(_,i)=>addDays(t,-i)).filter(x=>S.days[x]&&S.days[x].meals.length);
-  const avg=last7.length?r0(last7.reduce((a,x)=>a+dayTotals(S.days[x]).k,0)/last7.length):0;
-  let h=`<div class="card stats"><div><b>${streak}</b><small>连续记录(天)</small></div><div><b>${okN}</b><small>本月达标(天)</small></div><div><b>${avg||'--'}</b><small>近7天日均kcal</small></div></div>`;
+  const recorded=Array.from({length:7},(_,i)=>S.days[addDays(t,-i)]).filter(d=>d?.meals.length);
+  const counted=recorded.filter(d=>!hasPendingMeal(d)),pending=recorded.length-counted.length;
+  const avg=counted.length?r0(counted.reduce((a,d)=>a+dayTotals(d).k,0)/counted.length):'—';
+  let h=`<div class="card stats"><div><b>${streak}</b><small>连续记录(天)</small></div><div><b>${okN}</b><small>本月达标(天)</small></div><div><b>${avg}</b><small>近7天日均 kcal<br>${counted.length} 天参与${pending?' · '+pending+' 天待补录':''}</small></div></div>`;
   // 日历
   const [y,m]=S.month.split('-').map(Number);const first=new Date(y,m-1,1);const sw=(first.getDay()+6)%7;const dim=new Date(y,m,0).getDate();
   let cells=['一','二','三','四','五','六','日'].map(w=>`<div class="wd">${w}</div>`).join('')+'<div></div>'.repeat(sw);
@@ -797,9 +801,10 @@ function weightChart(){
 }
 function openDay(k){
   const d=getDay(k),t=dayTotals(d),C=calc(),L=dateLabel(k);
-  let b=`<div class="row" style="margin-bottom:10px"><span><b style="font-size:22px">${r0(t.k)}</b> <small>${C?'/ '+dayTarget(k,C)+' ':''}kcal · 蛋白 ${r0(t.p)}g${t.g?' · 按克记录 '+r1(t.g)+' g':''}</small></span><span class="grow"></span>${d.weight?`<span class="sub">⚖️ ${d.weight} kg</span>`:''}</div>`;
+  const hasFood=d.meals.some(m=>m.items.length),pending=hasPendingMeal(d);
+  let b=`<div class="row" style="margin-bottom:10px"><span>${pending&&hasFood?'已记 ':''}<b style="font-size:22px">${pending&&!hasFood?'待补录':r0(t.k)}</b> <small>${pending&&!hasFood?'':`${C?'/ '+dayTarget(k,C)+' ':''}kcal · 蛋白 ${r0(t.p)}g${t.g?' · 按克记录 '+r1(t.g)+' g':''}`}</small></span><span class="grow"></span>${d.weight?`<span class="sub">⚖️ ${d.weight} kg</span>`:''}</div>`;
   TYPES.forEach(tp=>d.meals.filter(m=>m.type===tp).forEach(m=>{
-    b+=`<div class="dd-meal"><div class="row"><b style="color:${MT[tp].c}">${MT[tp].n}</b><span class="sub">${m.time}</span><span class="grow"></span><span>${r0(sumItems(m.items).k)} kcal</span></div>
+    b+=`<div class="dd-meal"><div class="row"><b style="color:${MT[tp].c}">${MT[tp].n}</b><span class="sub">${m.time}</span><span class="grow"></span><span>${m.items.length?r0(sumItems(m.items).k)+' kcal':'待补录'}</span></div>
     ${m.photos.length?`<div class="dd-ph">${m.photos.map(p=>`<img data-pid="${p}" data-a="viewp" data-v="${p}" alt="">`).join('')}</div>`:''}
     <div class="sub">${esc(m.items.map(itemLabel).join('、'))}</div>${m.note?`<div style="font-size:14px;margin-top:4px">${esc(m.note)}</div>`:''}</div>`;
   }));
@@ -841,7 +846,8 @@ function renderMe(){
     <button class="btn green block" data-a="saveSet">保存并计算</button></div>`;
   const ed=S.meEdit?S.custom.find(x=>x.n===S.meEdit):null;
   h+=`<div class="card"><div class="h2">⭐ 我的食物<span class="grow"></span><span class="sub">${S.custom.length} 个</span></div>
-    ${S.custom.length?S.custom.map(f=>`<div class="myf"><span class="em">${emo(f)}</span><div class="rt"><div>${esc(f.n)}</div><small>${f.per===100?`每 100${f.u}`:`每${f.u}`} ${r0(f.k)} kcal · 蛋白 ${f.p}g</small></div><button class="btn ghost sm" data-a="cfEdit" data-v="${esc(f.n)}">改</button><button class="rm" data-a="cfDel" data-v="${esc(f.n)}">×</button></div>`).join(''):'<p class="sub" style="margin:0">天天喝的那款牛奶、公司食堂的套餐，照包装或估一个数加进来，以后记一餐搜名字就有。</p>'}
+    ${S.custom.length?S.custom.map(f=>`<div class="myf"><span class="em">${emo(f)}</span><div class="rt"><div>${esc(f.n)}${f.recipe?'<i class="tag">菜谱</i>':''}</div><small>${f.per===100?`每 100${f.u}`:`每${f.u}`} ${r0(f.k)} kcal · 蛋白 ${f.p}g</small></div><button class="btn ghost sm" data-a="cfEdit" data-v="${esc(f.n)}">改</button><button class="rm" data-a="cfDel" data-v="${esc(f.n)}">×</button></div>`).join(''):'<p class="sub" style="margin:0">天天喝的那款牛奶、公司食堂的套餐，照包装或估一个数加进来，以后记一餐搜名字就有。</p>'}
+    <button class="btn ghost sm" style="margin-top:10px" data-a="newRecipe">＋ 新建菜谱</button>
     <details class="custom" id="meCFd" ${ed?'open':''}><summary>${ed?'✏️ 正在修改：'+esc(ed.n):'＋ 照包装加一个'}</summary>${cfHTML(ed)}</details></div>`;
   h+=`<div class="card"><div class="h2">💾 数据与备份</div>
     <p class="sub" style="margin:0 0 12px">所有记录和照片只存在这台手机的浏览器里，不上传任何服务器，没网也能用。建议每周导出一次备份（照片也在里面）。</p>
@@ -880,22 +886,69 @@ function closeSheet(){$('#sheetWrap').classList.remove('open');document.body.cla
 function openEditor({type,meal,items}={}){
   const tp=meal?meal.type:(type||autoType());
   const st=S.settings||DEF_SET;
-  S.edit={date:S.date,isNew:!meal,orig:meal?meal.photos.slice():[],newPhotos:[],cat:'常用',
+  S.edit={date:S.date,isNew:!meal,orig:meal?meal.photos.slice():[],newPhotos:[],cat:'常用',history:portionHistory(),
     meal:meal?JSON.parse(JSON.stringify(meal)):{id:uid(),type:tp,time:S.date===todayKey()?nowHM():st.times[tp],items:items||[],photos:[],note:''}};
   const E=S.edit;
   const body=`<div class="seg" id="edType">${TYPES.map(t=>`<button data-a="edType" data-v="${t}" class="${t===E.meal.type?'on':''}">${MT[t].n}</button>`).join('')}</div>
     <div class="row" style="margin-top:10px"><span class="sub">时间</span><input class="inp" id="edTime" type="time" value="${E.meal.time}" style="width:auto;padding:6px 10px"><span class="grow"></span><span class="sub" id="edBud"></span></div>
     <div class="sec-t">照片</div><div class="ed-ph" id="edPhotos"></div>
     <div class="sec-t">吃了什么 <small>（可以只拍照，之后再补）</small></div>
-    <div id="edItems"></div><div class="recent" id="edRecent"></div>
-    <div class="search"><input class="inp" id="edQ" type="search" placeholder="🔍 搜：鸡蛋、水牛奶、肠粉、麦当劳…" autocomplete="off"></div>
-    <div class="chips scroll-x" id="edCats"></div><div id="edRes" style="margin-top:8px"></div>
-    <details class="custom" id="edCFd"><summary>＋ 找不到？照包装上的营养成分表加一个</summary><div id="edCF">${cfHTML()}</div></details>
+    ${foodPicker(`<details class="custom" id="mealRecipe"><summary>把选中的食材存为菜谱</summary>
+      <p class="sub">上面选的食物会组成一道菜。保存菜谱后，填这顿实际吃的克数。</p>${recipeFields()}</details>`)}
     <div class="sec-t">备注</div><textarea class="inp" id="edNote" placeholder="在哪吃、口味、吃完饱不饱…">${esc(E.meal.note)}</textarea>`;
-  const foot=`<div class="tot" id="edTotal"></div>${meal?'<button class="btn ghost danger" data-a="delMeal">删除</button>':''}<button class="btn green" data-a="saveMeal">保存</button>`;
+  const foot=`<div class="tot" id="edTotal"></div>${meal?'<button class="btn ghost danger" data-a="delMeal">删除</button>':''}<button class="btn green" id="saveMealAction" data-a="saveMeal">保存</button>`;
   openSheet(meal?'编辑这一餐':'记一餐',body,foot);
   $('#sheet .sheet-h .x').dataset.a='cancelEdit';
   edPhotos();edItems();edCats();edRes();edRecent();
+}
+function foodPicker(afterItems=''){
+  return `<div id="edItems"></div>${afterItems}<div class="recent" id="edRecent"></div>
+    <div class="search"><input class="inp" id="edQ" type="search" placeholder="🔍 搜食物或菜谱" aria-label="搜索食物或菜谱" autocomplete="off"></div>
+    <div class="chips scroll-x" id="edCats"></div><div id="edRes" style="margin-top:8px"></div>
+    <details class="custom" id="edCFd"><summary>＋ 找不到？照包装上的营养成分表加一个</summary><div id="edCF">${cfHTML()}</div></details>`;
+}
+function recipeFields(food){
+  return `<label class="field"><span>菜谱名</span><input class="inp" id="recipeName" placeholder="如：我家的番茄炒蛋" value="${esc(food?.n||'')}"></label>
+    <label class="field"><span>整道菜出锅后的净重（克）</span><input class="inp" id="recipeYield" type="number" inputmode="decimal" min="0" step="any" placeholder="不含锅或盘子的重量" value="${esc(food?.recipe.yieldGrams??'')}"></label>
+    <p class="sub" id="recipeEstimate" aria-live="polite"></p>`;
+}
+function openRecipe(food){
+  S.edit={recipeEditor:true,original:food,cat:'常用',history:portionHistory(),
+    meal:{items:food?food.recipe.ingredients.map(it=>({...it})):[]}};
+  openSheet(food?'编辑菜谱':'新建菜谱',`${recipeFields(food)}<div class="sec-t">整道菜的食材和用量</div>${foodPicker()}`,
+    '<button class="btn green block" data-a="saveRecipe">保存菜谱</button>');
+  edItems();edCats();edRes();
+}
+function showRecipeEstimate(items,total){
+  const out=$('#recipeEstimate');
+  if(!out)return;
+  const weight=+$('#recipeYield').value;
+  const complete=items.length&&positive(weight)&&items.every(it=>!missingWeight(it)&&positive(portionAmount(it)));
+  out.textContent=complete?`每 100 g 约 ${r0(total.k*100/weight)} kcal · 蛋白 ${r1(total.p*100/weight)} g · 碳水 ${r1(total.c*100/weight)} g · 脂肪 ${r1(total.f*100/weight)} g`:'';
+}
+async function saveRecipe(button){
+  const E=S.edit,items=E.meal.items,name=$('#recipeName').value.trim(),yieldGrams=+$('#recipeYield').value;
+  if(!name){toast('请填写菜谱名');$('#recipeName').focus();return}
+  if(!positive(yieldGrams)){toast('请填写出锅后的净重');$('#recipeYield').focus();return}
+  if(!items.length){toast('请先添加食材');$('#edQ').focus();return}
+  const bad=items.findIndex(it=>missingWeight(it)||!positive(portionAmount(it)));
+  if(bad!==-1){toast('请补全食材用量');$(`#edItems .${missingWeight(items[bad])||'amt'}[data-i="${bad}"]`).focus();return}
+  const total=sumItems(items),scale=100/yieldGrams;
+  const food={n:name,u:'g',per:100,def:100,k:total.k*scale,p:total.p*scale,c:total.c*scale,f:total.f*scale,
+    cat:'我的',a:'',r:'',recipe:{yieldGrams,ingredients:items.map(it=>({...it}))}};
+  if(![food.k,food.p,food.c,food.f].every(Number.isFinite)){toast('请检查食材用量和出锅重量');return}
+  button.disabled=true;
+  try{
+    await changeCustomFoods(list=>{
+      if(FOODS.some(x=>x.n===name)||list.some(x=>x.n===name&&x.n!==E.original?.n))throw new Error('已有同名食物，请换个菜谱名');
+      if(E.original&&JSON.stringify(list.find(x=>x.n===E.original.n))!==JSON.stringify(E.original))throw new Error('这份菜谱已发生变动，请重新打开');
+      return list.filter(x=>x.n!==E.original?.n).concat(food);
+    });
+    if(S.edit!==E)return;
+    if(E.recipeEditor){closeSheet();render();toast('菜谱已保存');return}
+    E.meal.items=[mkItem(name,'')];$('#mealRecipe').open=false;$('#recipeName').value='';$('#recipeYield').value='';
+    edItems();edRes();edRecent();$('#edItems .amt').focus();toast('菜谱已保存，填这顿吃的克数');
+  }catch(error){toast(error.message||'菜谱保存失败')}finally{button.disabled=false}
 }
 function edPhotos(){
   const E=S.edit;$('#edPhotos').innerHTML=E.meal.photos.map((p,i)=>`<div class="p"><img data-pid="${p}" data-a="viewp" data-v="${p}" alt=""><button data-a="rmPhoto" data-i="${i}">×</button></div>`).join('')+
@@ -910,22 +963,32 @@ function missingWeight(it){
 function itemNutrition(it){
   const missing=missingWeight(it);
   if(missing==='unit-grams')return `请填写每${it.u}克重`;
-  if(missing)return '请填写实吃克数';
+  if(missing)return S.edit?.recipeEditor?'请填写食材用量':'请填写实吃克数';
   const n=nut(it);return `${r0(n.k)} kcal · 蛋白 ${r1(n.p)}g`;
 }
-function previousUnitGrams(it){
+function portionHistory(){
+  const history=new Map();
   for(const date of Object.keys(S.days).sort().reverse()){
-    const meals=S.days[date].meals.slice().sort((a,b)=>b.time.localeCompare(a.time));
+    const meals=S.days[date].meals.slice().reverse().sort((a,b)=>b.time.localeCompare(a.time));
     for(const m of meals){
-      const found=m.items.find(x=>x.n===it.n&&x.u===it.u&&positive(x.unitGrams));
-      if(found)return +found.unitGrams;
+      for(const it of m.items.slice().reverse()){
+        const key=JSON.stringify([it.n,it.u]);
+        if(!history.has(key))history.set(key,{last:it,unitGrams:''});
+        const entry=history.get(key);
+        if(!entry.unitGrams&&positive(it.unitGrams))entry.unitGrams=+it.unitGrams;
+      }
     }
   }
-  return '';
+  return history;
+}
+function historyFor(it){return S.edit.history.get(JSON.stringify([it.n,it.u]))}
+function lastGrams(it){
+  const last=historyFor(it)?.last;
+  return last&&shownUnit(last)==='g'?+(last.grams??last.amt):0;
 }
 function toggleWeigh(it){
   if(it.grams==null){
-    if(!positive(it.unitGrams))it.unitGrams=previousUnitGrams(it);
+    if(!positive(it.unitGrams))it.unitGrams=historyFor(it)?.unitGrams||'';
     it.grams=positive(it.unitGrams)&&positive(it.amt)?r1(it.amt*it.unitGrams):'';
   }else{
     if(!missingWeight(it))it.amt=portionAmount(it);
@@ -935,22 +998,32 @@ function toggleWeigh(it){
 function editItemRow(it,i){
   const unit=esc(shownUnit(it)),base=esc(it.u),name=esc(it.n),weighed=it.grams!=null;
   const amount=weighed?it.grams:it.amt;
-  const tools=SCALABLE.has(it.u)?'':`<div class="portion-tools">
-    <button data-a="weigh" data-i="${i}">${weighed?'按'+base+'记':'按克称重'}</button>
-    ${weighed?`<label>每${base}（约 ${r0(it.k/it.per)} kcal）重 <input class="inp unit-grams" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" value="${esc(it.unitGrams)}"> g</label>`:''}</div>`;
+  const last=!S.edit.recipeEditor&&unit==='g'?lastGrams(it):0;
+  const toggle=SCALABLE.has(it.u)?'':`<button data-a="weigh" data-i="${i}">${weighed?'按'+base+'记':'按克称重'}</button>`;
+  const basis=weighed?`<label>每${base}（约 ${r0(it.k/it.per)} kcal）重 <input class="inp unit-grams" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" value="${esc(it.unitGrams)}"> g</label>`:'';
+  const shortcut=positive(last)?`<button data-a="lastGrams" data-i="${i}">上次 ${last} 克</button>`:'';
+  const tools=toggle||shortcut?`<div class="portion-tools">${shortcut}${toggle}${basis}</div>`:'';
   return `<div class="it"><div class="it-main"><span class="em" style="width:34px;height:34px;font-size:18px">${emo(findFood(it.n)||it)}</span>
     <div class="in"><div>${name}</div><small>${esc(itemNutrition(it))}</small></div>
-    <div class="step"><button data-a="dec" data-i="${i}" aria-label="减少${name}的分量">−</button><input class="amt" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" aria-label="${name}实吃分量（${unit}）" placeholder="实吃" value="${esc(amount)}"><em>${unit}</em><button data-a="inc" data-i="${i}" aria-label="增加${name}的分量">＋</button></div>
+    <div class="step"><button data-a="dec" data-i="${i}" aria-label="减少${name}的分量">−</button><input class="amt" data-i="${i}" type="number" inputmode="decimal" min="0" step="any" aria-label="${name}${S.edit.recipeEditor?'食材用量':'实吃分量'}（${unit}）" placeholder="${S.edit.recipeEditor?'用量':'实吃'}" value="${esc(amount)}"><em>${unit}</em><button data-a="inc" data-i="${i}" aria-label="增加${name}的分量">＋</button></div>
     <button class="rm" data-a="rmItem" data-i="${i}" aria-label="移除${name}">×</button></div>${tools}</div>`;
 }
 function edItems(){
   const items=S.edit.meal.items;
   $('#edItems').innerHTML=items.length?items.map(editItemRow).join(''):'<p class="sub" style="margin:0 0 6px">还没添加食物，从下面搜索或点选 👇</p>';
+  const form=$('#mealRecipe');
+  if(form){form.hidden=!items.length;if(form.hidden)form.open=false}
   edTotal();
 }
 function edTotal(){
-  const E=S.edit;if(!E)return;const t=sumItems(E.meal.items);const C=calc();
-  $('#edTotal').innerHTML=E.meal.items.some(missingWeight)?'请补全食物重量':`合计${t.g?' · 按克记录 '+r1(t.g)+' g':''}<b>${r0(t.k)} kcal</b>蛋白 ${r0(t.p)}g`;
+  const E=S.edit;if(!E)return;const t=sumItems(E.meal.items);
+  showRecipeEstimate(E.meal.items,t);
+  if(E.recipeEditor)return;
+  const recipeOpen=$('#mealRecipe').open,action=$('#saveMealAction');
+  action.dataset.a=recipeOpen?'saveRecipe':'saveMeal';
+  action.textContent=recipeOpen?'存为菜谱':'保存';
+  const C=calc();
+  $('#edTotal').innerHTML=E.meal.items.some(missingWeight)?'请补全食物重量':`${recipeOpen?'整道菜合计':'合计'}${t.g?' · 按克记录 '+r1(t.g)+' g':''}<b>${r0(t.k)} kcal</b>蛋白 ${r0(t.p)}g`;
   $('#edBud').textContent=C?`${MT[E.meal.type].n}预算 ${C.meals[E.meal.type]} kcal`:'';
 }
 function edCats(){$('#edCats').innerHTML=CATS.map(c=>`<button class="chip ${c===S.edit.cat?'on':''}" data-a="edCat" data-v="${c}">${CAT_E[c]} ${c}</button>`).join('')}
@@ -967,11 +1040,12 @@ function recentCombos(tp){
 }
 function edRecent(){
   const E=S.edit,box=$('#edRecent');if(!box)return;
+  if(E.recipeEditor)return;
   const list=E.meal.items.length?[]:recentCombos(E.meal.type);E.recent=list;
   box.innerHTML=list.length?`<small>🔁 最近的${MT[E.meal.type].n}，点一下再来一次</small>`+list.map((m,i)=>`<button data-a="again" data-i="${i}"><span>${esc(m.items.map(x=>x.n).join('、'))}</span><b>${r0(sumItems(m.items).k)} kcal</b></button>`).join(''):'';
 }
 function resRow(f){const n=f.k*f.def/f.per,pr=f.p*f.def/f.per;const hp=n>30&&pr*4/n>=0.3;
-  return `<button class="res" data-a="addFood" data-v="${esc(f.n)}"><span class="em">${emo(f)}</span><span class="rt"><div>${esc(f.n)}${f.r&&REG[f.r]?`<i class="tag reg">${REG[f.r]}</i>`:''}${hp?'<i class="tag">高蛋白</i>':''}</div><small>${f.def}${f.u} · ${r0(n)} kcal · 蛋白 ${r1(pr)}g</small></span><i>＋</i></button>`}
+  return `<button class="res" data-a="addFood" data-v="${esc(f.n)}"><span class="em">${emo(f)}</span><span class="rt"><div>${esc(f.n)}${f.recipe?'<i class="tag">菜谱</i>':''}${f.r&&REG[f.r]?`<i class="tag reg">${REG[f.r]}</i>`:''}${hp?'<i class="tag">高蛋白</i>':''}</div><small>${f.def}${f.u} · ${r0(n)} kcal · 蛋白 ${r1(pr)}g</small></span><i>＋</i></button>`}
 function edRes(){
   const q=($('#edQ')?.value||'').trim();const E=S.edit;let list;
   if(q){const ql=q.toLowerCase();const sc=f=>{const n=f.n.toLowerCase();return n===ql?0:n.includes(ql)?1:(f.a||'').toLowerCase().includes(ql)?3:f.cat.includes(q)?4:9};
@@ -1007,8 +1081,38 @@ function readCF(root){
 }
 async function saveCF(root){
   const f=readCF(root);if(typeof f==='string'){toast(f);return null}
-  const old=root.dataset.old;S.custom=S.custom.filter(x=>x.n!==f.n&&x.n!==old).concat(f);await idb.put('kv','custom',S.custom);
+  const old=root.dataset.old;
+  try{await changeCustomFoods(list=>{
+    if(list.some(x=>x.recipe&&(x.n===f.n||x.n===old)))throw new Error('已有同名菜谱，请换个名称');
+    return list.filter(x=>x.n!==f.n&&x.n!==old).concat(f);
+  })}catch(error){toast(error.message);return null}
   return f;
+}
+// 在同一 IndexedDB 事务内读取和更新，保留另一标签页刚保存的食物。
+function changeCustomFoods(update){
+  return new Promise((resolve,reject)=>{
+    const tx=idb.db.transaction('kv','readwrite'),store=tx.objectStore('kv');
+    const read=store.get('custom');let next,failure;
+    read.onsuccess=()=>{try{next=update(read.result||[]);store.put(next,'custom')}catch(error){failure=error;tx.abort()}};
+    tx.oncomplete=()=>{S.custom=next;resolve()};
+    tx.onabort=()=>reject(failure||tx.error||new Error('食物保存失败'));
+  });
+}
+function addPickedFood(name){
+  const E=S.edit,items=E.meal.items,it=mkItem(name);
+  if(!it)return;
+  let i=items.findIndex(x=>x.n===it.n&&x.u===it.u);
+  if(i<0){
+    const last=!E.recipeEditor&&historyFor(it)?.last;
+    if(last?.grams!=null&&positive(last.unitGrams)){it.unitGrams=+last.unitGrams;it.grams=''}
+    else if(it.u==='g'&&(findFood(name).recipe||last))it.amt='';
+    i=items.push(it)-1;
+  }else if(items[i].grams==null){
+    items[i].amt=r1(+items[i].amt+(SCALABLE.has(it.u)?it.amt:1));
+  }
+  edItems();edRecent();
+  if(shownUnit(items[i])==='g'){const input=$(`#edItems .amt[data-i="${i}"]`);input.focus();input.select()}
+  else toast(`+ ${it.n}`);
 }
 function stepOf(it){return shownUnit(it)==='g'?1:it.u==='ml'?50:0.5}
 async function handleFiles(files){
@@ -1016,7 +1120,7 @@ async function handleFiles(files){
   for(const f of files){try{const b=await compress(f);const id='p'+uid();await idb.put('photos',id,b);E.meal.photos.push(id);E.newPhotos.push(id)}catch(e){toast(e.message||'照片保存失败')}}
   edPhotos();
 }
-async function cancelEdit(){const E=S.edit;if(E)for(const p of E.newPhotos)await delPhoto(p);closeSheet()}
+async function cancelEdit(){const E=S.edit;for(const p of E?.newPhotos||[])await delPhoto(p);closeSheet()}
 async function saveMeal(){
   const E=S.edit;const m=E.meal;
   for(const [i,it] of m.items.entries()){
@@ -1107,13 +1211,17 @@ document.addEventListener('click',async e=>{
     case 'cfSave':{const root=el.closest('.cf');const f=await saveCF(root);if(!f)break;
       if(E&&root.closest('#edCF')){E.meal.items.push(mkItem(f.n,f.def));edItems();edRecent();edRes();$('#edCF').innerHTML=cfHTML();$('#edCFd').open=false;toast('已加到这一餐，也存进了「我的」')}
       else{S.meEdit=null;toast('已保存');render()}break}
-    case 'cfEdit':S.meEdit=v;render();setTimeout(()=>{const d=$('#meCFd');if(d)d.scrollIntoView({behavior:'smooth',block:'center'})},50);break;
-    case 'cfDel':if(confirm(`删除「${v}」？以前记录里的不受影响。`)){S.custom=S.custom.filter(x=>x.n!==v);await idb.put('kv','custom',S.custom);if(S.meEdit===v)S.meEdit=null;render()}break;
+    case 'newRecipe':openRecipe();break;
+    case 'saveRecipe':await saveRecipe(el);break;
+    case 'cfEdit':{const f=S.custom.find(x=>x.n===v);if(f?.recipe){openRecipe(f);break}
+      S.meEdit=v;render();setTimeout(()=>{const d=$('#meCFd');if(d)d.scrollIntoView({behavior:'smooth',block:'center'})},50);break}
+    case 'cfDel':if(confirm(`删除「${v}」？以前记录里的不受影响。`)){await changeCustomFoods(list=>list.filter(x=>x.n!==v));if(S.meEdit===v)S.meEdit=null;render()}break;
     case 'pickCam':$('#camIn').click();break;
     case 'pickAlb':$('#albIn').click();break;
     case 'rmPhoto':{const i=+el.dataset.i;const id=E.meal.photos[i];E.meal.photos.splice(i,1);if(E.newPhotos.includes(id)){E.newPhotos=E.newPhotos.filter(x=>x!==id);await delPhoto(id)}edPhotos();break}
     case 'edCat':E.cat=v;$('#edQ').value='';edCats();edRes();break;
-    case 'addFood':{const it=mkItem(v);if(it){const ex=E.meal.items.find(x=>x.n===it.n&&x.u===it.u&&x.grams==null);if(ex)ex.amt=r1(+ex.amt+(SCALABLE.has(ex.u)?it.amt:1));else E.meal.items.push(it);edItems();edRecent();toast(`+ ${it.n}`)}break}
+    case 'addFood':addPickedFood(v);break;
+    case 'lastGrams':{const it=E.meal.items[+el.dataset.i];it[it.grams==null?'amt':'grams']=lastGrams(it);edItems();break}
     case 'weigh':{const i=+el.dataset.i,it=E.meal.items[i];toggleWeigh(it);edItems();
       const input=$(`#edItems .${missingWeight(it)||'amt'}[data-i="${i}"]`);input.focus();input.select();break}
     case 'inc':case 'dec':{const it=E.meal.items[+el.dataset.i],field=it.grams==null?'amt':'grams';
@@ -1123,9 +1231,11 @@ document.addEventListener('click',async e=>{
     case 'delMeal':delMeal();break;
   }
 });
+document.addEventListener('toggle',e=>{if(e.target.id==='mealRecipe'&&e.target.isConnected)edTotal()},true);
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.id==='edQ')edRes();
+  else if(t.id==='recipeYield'&&S.edit)edTotal();
   else if(S.edit&&t.matches('#edItems .amt,#edItems .unit-grams')){
     const it=S.edit.meal.items[+t.dataset.i];
     const field=t.classList.contains('unit-grams')?'unitGrams':it.grams==null?'amt':'grams';
